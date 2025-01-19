@@ -72,6 +72,27 @@ local function update_parent_checkbox(buf, current_line)
   end
 end
 
+local function update_children_checkboxes(buf, line_num, indent_level, new_mark)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local current_line = line_num + 1
+  
+  while current_line < #lines do
+    local check_text = lines[current_line + 1]
+    local check_indent = get_indent_level(check_text)
+    
+    -- Stop if we reach a line with less or equal indentation
+    if check_indent <= indent_level then break end
+    
+    -- Update child checkbox if it exists
+    if is_checkbox_line(check_text) then
+      local new_line = check_text:gsub("%[.%]", "["..new_mark.."]")
+      vim.api.nvim_buf_set_lines(buf, current_line, current_line + 1, false, {new_line})
+    end
+    
+    current_line = current_line + 1
+  end
+end
+
 local function toggle_checkbox()
   local buf = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
@@ -84,6 +105,11 @@ local function toggle_checkbox()
     local current_line = vim.fn.line(".") - 1
     
     vim.api.nvim_set_current_line(new_line)
+    
+    -- Update all children checkboxes to match parent's state
+    update_children_checkboxes(buf, current_line, #indent, new_mark)
+    
+    -- Update parent checkboxes state
     update_parent_checkbox(buf, current_line)
   end
 end
