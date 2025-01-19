@@ -277,25 +277,30 @@ function M.setup(opts)
   vim.keymap.set('n', key, '<Plug>CycleListType',
     { silent = true, desc = desc })
     
+  -- Create the Plug mapping for checkbox toggle
+  vim.keymap.set('n', '<Plug>OrgListToggleCheckbox', function()
+    local current_ft = vim.bo.filetype
+    local allowed_fts = opts.checkbox_toggle.filetypes or {}
+    
+    -- Check if current filetype is in allowed filetypes
+    local is_allowed = false
+    for _, ft in ipairs(allowed_fts) do
+      if current_ft == ft then
+        is_allowed = true
+        break
+      end
+    end
+    
+    if is_allowed then
+      toggle_checkbox()
+      -- Make the toggle repeatable
+      vim.cmd([[silent! call repeat#set("\<Plug>OrgListToggleCheckbox", v:count)]])
+    end
+  end, { silent = true })
+
   -- Setup checkbox toggle if enabled
   if opts.checkbox_toggle and opts.checkbox_toggle.enabled then
-    vim.keymap.set('n', opts.checkbox_toggle.key, function()
-      local current_ft = vim.bo.filetype
-      local allowed_fts = opts.checkbox_toggle.filetypes or {}
-      
-      -- Check if current filetype is in allowed filetypes
-      local is_allowed = false
-      for _, ft in ipairs(allowed_fts) do
-        if current_ft == ft then
-          is_allowed = true
-          break
-        end
-      end
-      
-      if is_allowed then
-        toggle_checkbox()
-      end
-    end, {
+    vim.keymap.set('n', opts.checkbox_toggle.key, '<Plug>OrgListToggleCheckbox', {
       silent = true,
       desc = opts.checkbox_toggle.desc
     })
