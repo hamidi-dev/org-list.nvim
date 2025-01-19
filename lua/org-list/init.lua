@@ -15,29 +15,29 @@ end
 local function update_parent_checkbox(buf, current_line)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local current_indent = get_indent_level(lines[current_line + 1])
-  
+
   -- Find parent by looking for the first line with less indentation
   local parent_line = current_line
   while parent_line >= 0 do
     parent_line = parent_line - 1
     if parent_line < 0 then break end
-    
+
     local line = lines[parent_line + 1]
     if not is_checkbox_line(line) then goto continue end
-    
+
     local parent_indent = get_indent_level(line)
     if parent_indent < current_indent then
       -- Found the parent, now check all its children
       local all_checked = true
       local any_checked = false
       local partial = false
-      
+
       -- Look at all children of this parent
       local check_line = parent_line + 1
       while check_line < #lines do
         local check_text = lines[check_line + 1]
         local check_indent = get_indent_level(check_text)
-        
+
         if check_indent <= parent_indent then break end
         if check_indent == current_indent and is_checkbox_line(check_text) then
           local mark = check_text:match("^%s*%- %[(.?)%]")
@@ -51,7 +51,7 @@ local function update_parent_checkbox(buf, current_line)
         end
         check_line = check_line + 1
       end
-      
+
       -- Update parent's checkbox state
       local parent_text = lines[parent_line + 1]
       local new_mark = " "
@@ -60,10 +60,10 @@ local function update_parent_checkbox(buf, current_line)
       elseif any_checked or partial then
         new_mark = "-"
       end
-      
-      local new_line = parent_text:gsub("%[.%]", "["..new_mark.."]")
-      vim.api.nvim_buf_set_lines(buf, parent_line, parent_line + 1, false, {new_line})
-      
+
+      local new_line = parent_text:gsub("%[.%]", "[" .. new_mark .. "]")
+      vim.api.nvim_buf_set_lines(buf, parent_line, parent_line + 1, false, { new_line })
+
       -- Recursively update grandparents
       update_parent_checkbox(buf, parent_line)
       break
@@ -72,18 +72,44 @@ local function update_parent_checkbox(buf, current_line)
   end
 end
 
+local function update_children_checkboxes(buf, line_num, indent_level, new_mark)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local current_line = line_num + 1
+
+  while current_line < #lines do
+    local check_text = lines[current_line + 1]
+    local check_indent = get_indent_level(check_text)
+
+    -- Stop if we reach a line with less or equal indentation
+    if check_indent <= indent_level then break end
+
+    -- Update child checkbox if it exists
+    if is_checkbox_line(check_text) then
+      local new_line = check_text:gsub("%[.%]", "[" .. new_mark .. "]")
+      vim.api.nvim_buf_set_lines(buf, current_line, current_line + 1, false, { new_line })
+    end
+
+    current_line = current_line + 1
+  end
+end
+
 local function toggle_checkbox()
   local buf = vim.api.nvim_get_current_buf()
   local line = vim.api.nvim_get_current_line()
   local checkbox_pattern = "^(%s*)%- %[(.?)%] (.*)$"
   local indent, mark, content = line:match(checkbox_pattern)
-  
+
   if indent and content then
     local new_mark = mark == " " and "x" or mark == "x" and " " or " "
     local new_line = string.format("%s- [%s] %s", indent, new_mark, content)
     local current_line = vim.fn.line(".") - 1
-    
+
     vim.api.nvim_set_current_line(new_line)
+
+    -- Update all children checkboxes to match parent's state
+    update_children_checkboxes(buf, current_line, #indent, new_mark)
+
+    -- Update parent checkboxes state
     update_parent_checkbox(buf, current_line)
   end
 end
@@ -111,19 +137,19 @@ local function cycle_list_type()
   local function is_list_or_content(line)
     -- Skip org-mode metadata lines
     if line:match("^%s*DEADLINE:") or
-       line:match("^%s*SCHEDULED:") or
-       line:match("^%s*CLOSED:") or
-       line:match("^%s*:%w+:$") or  -- Tags line
-       line:match("^%s*%[#[A-Z]%]") or -- Priority
-       line:match("^%s*%[%d?%d?%d?%%%]") then -- Progress
+        line:match("^%s*SCHEDULED:") or
+        line:match("^%s*CLOSED:") or
+        line:match("^%s*:%w+:$") or           -- Tags line
+        line:match("^%s*%[#[A-Z]%]") or       -- Priority
+        line:match("^%s*%[%d?%d?%d?%%%]") then -- Progress
       return false
     end
-    
+
     -- Check if line is either a list item or non-empty content
     return line:match("^%s*[%-%d]+[%.%s%[%]]") or
-        (not line:match("^%s*$") and 
-         not line:match("^%s*#") and
-         not line:match("^%s*:"))
+        (not line:match("^%s*$") and
+          not line:match("^%s*#") and
+          not line:match("^%s*:"))
   end
 
   -- Find start of list
@@ -140,10 +166,10 @@ local function cycle_list_type()
   while end_line < #lines - 1 do
     local next_line = lines[end_line + 2] -- Look ahead to next line
     local current_line = lines[end_line + 1]
-    
+
     -- Stop if current line is not a list/content, or if next line is a heading
-    if not is_list_or_content(current_line) or 
-       (next_line and is_org_heading(next_line)) then
+    if not is_list_or_content(current_line) or
+        (next_line and is_org_heading(next_line)) then
       break
     end
     end_line = end_line + 1
@@ -194,7 +220,7 @@ local function cycle_list_type()
 
     if prev_line then
       local prev_indent = #(prev_line:match("^%s*") or "")
-      
+
       -- If we're at a new indentation level, reset the counter
       if prev_indent ~= indent_level then
         -- Only reset if we're going deeper
@@ -240,14 +266,14 @@ local function cycle_list_type()
   -- Transform lines based on the current type
   local new_lines = {}
   local indent_numbers = {} -- Track numbering for each indentation level
-  
+
   for _, line in ipairs(list_lines) do
     if line:match("^%s*$") then
       -- Preserve empty lines
       table.insert(new_lines, line)
     else
       local indent_level = #(line:match("^%s*") or "")
-      
+
       if current_type == "bullet" then
         local prev_line = new_lines[#new_lines]
         table.insert(new_lines, to_numbered(line, prev_line))
@@ -279,10 +305,10 @@ function M.setup(opts)
       enabled = true,
       key = '<C-Space>',
       desc = "Toggle checkbox state",
-      filetypes = { "org", "markdown" }  -- default allowed filetypes
+      filetypes = { "org", "markdown" } -- default allowed filetypes
     }
   }
-  
+
   -- Merge user options with defaults
   opts = vim.tbl_deep_extend("force", default_opts, opts or {})
 
@@ -301,12 +327,12 @@ function M.setup(opts)
   -- Map the key to the Plug mapping
   vim.keymap.set('n', key, '<Plug>CycleListType',
     { silent = true, desc = desc })
-    
+
   -- Create the Plug mapping for checkbox toggle
   vim.keymap.set('n', '<Plug>OrgListToggleCheckbox', function()
     local current_ft = vim.bo.filetype
     local allowed_fts = opts.checkbox_toggle.filetypes or {}
-    
+
     -- Check if current filetype is in allowed filetypes
     local is_allowed = false
     for _, ft in ipairs(allowed_fts) do
@@ -315,7 +341,7 @@ function M.setup(opts)
         break
       end
     end
-    
+
     if is_allowed then
       toggle_checkbox()
       -- Make the toggle repeatable
