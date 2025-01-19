@@ -1,0 +1,107 @@
+#+TITLE: org-list.nvim
+#+AUTHOR: Mohamed Hamidi
+#+OPTIONS: toc:2
+
+[[https://www.youtube.com/watch?v=AMrDkH9v6Jo][file:./preview.gif]]
+
+A simple Neovim plugin that makes working with lists a breeze! Whether you're taking notes, making TODOs, or organizing your thoughts, this plugin helps you manage different types of lists with minimal effort.
+
+While this plugin was designed to complement [[https://github.com/nvim-orgmode/orgmode][nvim-orgmode]], it works perfectly fine as a standalone plugin for managing lists in any text file.
+
+* ✨ Features
+
+- *List Type Cycling*: Quickly switch between different list formats:
+  - Plain text
+  - Bullet points (-)
+  - Numbered lists (1., 2., etc.)
+  - Checkboxes ([X])
+- *Smart Checkbox Management*: 
+  - Toggle checkboxes with a single keybind
+  - Parent checkboxes automatically update based on their children's state
+  - Partial completion states ([-]) for nested lists
+- Repeatable actions using vim-repeat (press . to repeat)
+
+* 🚀 Installation
+
+** Using lazy.nvim
+#+begin_src lua
+{
+  "hamidi-dev/org-list.nvim",
+  dependencies = {
+    "tpope/vim-repeat",  -- for repeatable actions with '.'
+  },
+  config = function()
+    require("org-list").setup({
+      -- your config here (optional)
+    })
+  end
+}
+#+end_src
+
+** Using packer.nvim
+#+begin_src lua
+use {
+  "hamidi-dev/org-list.nvim",
+  requires = {
+    "tpope/vim-repeat",  -- for repeatable actions with '.'
+  },
+  config = function()
+    require("org-list").setup()
+  end
+}
+#+end_src
+
+* ⚙️ Configuration
+
+The plugin works out of the box with sensible defaults, but you can customize it to your liking:
+
+#+begin_src lua
+require("org-list").setup({
+  mapping = {
+    key = "<leader>lt",  -- nvim-orgmode users: you might want to change this to <leader>olt
+    desc = "Toggle: Cycle through list types"
+  },
+  checkbox_toggle = {
+    enabled = true,
+    key = "<C-Space>",        -- Change the checkbox toggle key
+    desc = "Toggle checkbox state",
+    filetypes = { "org", "markdown" }     -- Add more filetypes as needed
+  }
+})
+#+end_src
+
+* 🎮 Usage
+
+** Cycle Through List Types
+1. Place your cursor anywhere in a list
+2. Press =<leader>lt= (or your custom mapping)
+3. The entire list will cycle through different formats
+4. Press =.= to repeat the cycle action on other lists (requires vim-repeat)
+
+** Toggle Checkboxes
+1. Place your cursor on a checkbox line
+2. Press =<C-Space>= (or your custom mapping)
+3. The checkbox will toggle between empty, checked, and partial states
+4. Press =.= to repeat the toggle action on other checkboxes (requires vim-repeat)
+
+* 💡 Tips
+
+- The plugin is smart enough to handle nested lists and maintain proper indentation
+- Parent checkboxes automatically show:
+  - [X] when all children are checked
+  - [-] when some children are checked
+  - [ ] when no children are checked
+- Works seamlessly with org-mode syntax and conventions
+
+* 🤝 Contributing
+
+Found a bug? Have a feature request? Feel free to:
+1. Open an issue
+2. Submit a pull request
+3. Start a discussion
+
+All contributions are welcome! 
+
+* 📄 License
+
+MIT License - feel free to use this in your own projects!
