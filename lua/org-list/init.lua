@@ -89,6 +89,8 @@ local function toggle_checkbox()
 end
 
 local function cycle_list_type()
+  -- Reset the indent numbers for each new cycle
+  indent_numbers = {}
   -- Get the current line and determine the range of the list
   local cursor_line = vim.fn.line(".") - 1
   local buf = vim.api.nvim_get_current_buf()
@@ -177,12 +179,36 @@ local function cycle_list_type()
   end
 
   -- Transformation functions
-  local function to_numbered(line, number)
+  local function to_numbered(line, prev_line)
     local indent = line:match("^(%s*)")
+    local indent_level = #indent
     local content = line
         :gsub("^%s*%- %[.%]%s*", "")
         :gsub("^%s*%- ", "")
-    return indent .. number .. ". " .. content
+        :gsub("^%s*%d+%.%s*", "")
+
+    -- Initialize numbers table for this indent level if needed
+    if not indent_numbers[indent_level] then
+      indent_numbers[indent_level] = 0
+    end
+
+    if prev_line then
+      local prev_indent = #(prev_line:match("^%s*") or "")
+      
+      -- If we're at a new indentation level, reset the counter
+      if prev_indent ~= indent_level then
+        -- Only reset if we're going deeper
+        if prev_indent < indent_level then
+          indent_numbers[indent_level] = 0
+        end
+        -- If we're returning to a previous level, continue from last number
+      end
+    end
+
+    -- Increment counter for this level
+    indent_numbers[indent_level] = indent_numbers[indent_level] + 1
+
+    return indent .. indent_numbers[indent_level] .. ". " .. content
   end
 
   local function to_checkbox(line)
@@ -223,9 +249,8 @@ local function cycle_list_type()
       local indent_level = #(line:match("^%s*") or "")
       
       if current_type == "bullet" then
-        -- Initialize or increment the number for this indent level
-        indent_numbers[indent_level] = (indent_numbers[indent_level] or 0) + 1
-        table.insert(new_lines, to_numbered(line, indent_numbers[indent_level]))
+        local prev_line = new_lines[#new_lines]
+        table.insert(new_lines, to_numbered(line, prev_line))
       elseif current_type == "plain" then
         table.insert(new_lines, to_bullet(line))
       elseif current_type == "numbered" then
