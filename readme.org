@@ -2,9 +2,9 @@
 #+AUTHOR: Mohamed Hamidi
 #+OPTIONS: toc:2
 
-[[https://www.youtube.com/watch?v=AMrDkH9v6Jo][file:./preview.gif]]
-
 A simple Neovim plugin that makes working with lists a breeze! Whether you're taking notes, making TODOs, or organizing your thoughts, this plugin helps you manage different types of lists with minimal effort.
+
+https://github.com/user-attachments/assets/c4d69201-503b-4977-ba5e-6456a28e6899
 
 While this plugin was designed to complement [[https://github.com/nvim-orgmode/orgmode][nvim-orgmode]], it works perfectly fine as a standalone plugin for managing lists in any text file.
 
