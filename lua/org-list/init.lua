@@ -39,7 +39,7 @@ local function update_parent_checkbox(buf, current_line)
         local check_indent = get_indent_level(check_text)
 
         if check_indent <= parent_indent then break end
-        if check_indent == current_indent and is_checkbox_line(check_text) then
+        if is_checkbox_line(check_text) then
           local mark = check_text:match("^%s*%- %[(.?)%]")
           if mark == "x" then
             any_checked = true
