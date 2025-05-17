@@ -63,7 +63,9 @@ require("org-list").setup({
   },
   checkbox_toggle = {
     enabled = true,
-    key = "<C-Space>",        -- Change the checkbox toggle key
+    -- NOTE: for nvim-orgmode users, you should change the following mapping OR change the one from orgmode.
+    -- If both mapping stay the same, the one from nvim-orgmode will "win"
+    key = "<C-Space>",
     desc = "Toggle checkbox state",
     filetypes = { "org", "markdown" }     -- Add more filetypes as needed
   }
